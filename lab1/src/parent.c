@@ -1,4 +1,9 @@
 #include "os_utils.h"
+#include <stdio.h>   
+#include <string.h>
+#include <unistd.h>
+#include <stdlib.h> 
+#include <sys/wait.h>
 
 #define MAX_LINE_LENGTH 1024
 #define MAX_FILENAME_LENGTH 256
@@ -21,22 +26,41 @@ int main() {
     pid_t pid_1, pid_2;
     char file1_name[MAX_FILENAME_LENGTH];
     char file2_name[MAX_FILENAME_LENGTH];
+    char temp_buffer[MAX_LINE_LENGTH];
 
     StatusCode status = STATUS_OK;
-    printf("Введите имя файла для child 1: ");
-    if (scanf("%255s", file1_name) != 1) {
+    const char* str1 = "Введите имя файла для child 1: ";    
+    write(STDOUT_FILENO, "Введите имя файла для child 1: ", strlen(str1));
+    fflush(stdout);
+    
+    ssize_t bytes_read = read(STDIN_FILENO, file1_name, MAX_FILENAME_LENGTH - 1);
+    if (bytes_read <= 0) {
         return INVALID_INPUT;
     }
-    printf("Введите имя файла для child 2: ");
-    if (scanf("%255s", file2_name) != 1) {
+    if (file1_name[bytes_read - 1] == '\n') {
+        file1_name[bytes_read - 1] = '\0';
+    } else {
+        file1_name[bytes_read] = '\0';
+    }
+    const char* str2 = "Введите имя файла для child 2: ";
+    write(STDOUT_FILENO, "Введите имя файла для child 2: \n", strlen(str2));
+    fflush(stdout);
+    
+    bytes_read = read(STDIN_FILENO, file2_name, MAX_FILENAME_LENGTH - 1);
+    if (bytes_read <= 0) {
         return INVALID_INPUT;
     }
-    while (getchar() != '\n');
-
+    if (file2_name[bytes_read - 1] == '\n') {
+        file2_name[bytes_read - 1] = '\0';
+    } else {
+        file2_name[bytes_read] = '\0';
+    }
+    
     if (pipe(pipe1_fd) == -1 || pipe(pipe2_fd) == -1) {
         perror("Ошибка pipe");
         return PIPE_ERROR;
     }
+    
     pid_1 = fork();
     if (pid_1 == -1) {
         perror("Ошибка fork 1");
@@ -62,14 +86,16 @@ int main() {
         close(pipe2_fd[1]);
         close(pipe1_fd[0]);
         close(pipe1_fd[1]);
-        start_child_process(pipe2_fd[0], "./lab1/child_run",  file2_name);
+        start_child_process(pipe2_fd[0], "./lab1/child_run", file2_name);
     }
 
     close(pipe1_fd[0]);
     close(pipe2_fd[0]);
-
-    printf("Родительский процесс начался \n");
-    printf("Введите строчки \n");
+    const char* par_start = "Родительский процесс начался \n";
+    write(STDOUT_FILENO, "Родительский процесс начался \n", strlen(par_start));
+    const char* input_str = "Введите строчки \n";
+    write(STDOUT_FILENO, "Введите строчки \n", strlen(input_str));
+    fflush(stdout);
 
     char buffer[MAX_LINE_LENGTH];
     while (fgets(buffer, sizeof(buffer), stdin) != NULL) {
@@ -82,33 +108,42 @@ int main() {
             break;
         }
         int write_fd = -1;
+        
         if (len > FILTER_LENGTH) {
             write_fd = pipe2_fd[1];
-            printf("Длина Child 2: %d\n", len);
+            int n = snprintf(temp_buffer, sizeof(temp_buffer), "Длина Child 2: %d\n", len);
+            write(STDOUT_FILENO, temp_buffer, n);
         } else {
             write_fd = pipe1_fd[1];
-            printf("Длина Child 1: %d\n", len);
+            int n = snprintf(temp_buffer, sizeof(temp_buffer), "Длина Child 1: %d\n", len);
+            write(STDOUT_FILENO, temp_buffer, n);
         }
+        fflush(stdout);
+        
         if (len < sizeof(buffer) - 1) {
             buffer[len] = '\n';
             buffer[len + 1] = '\0';
             len++;
         }
+        
         if (write(write_fd, buffer, len) != len) {
             perror("Ошибка с pipe");
             return PIPE_ERROR;
         }
     }
+
     close (pipe1_fd[1]);
     close(pipe2_fd[1]);
     waitpid(pid_1, NULL, 0);
     waitpid(pid_2, NULL, 0);
-    printf("Родительский и детский процесс успешно завершены");
+    const char* end_msg = "Родительский и детский процесс успешно завершены\n";
+    write(STDOUT_FILENO, "Родительский и детский процесс успешно завершены\n", strlen(end_msg));
+    fflush(stdout);
+    
     return STATUS_OK;
 
 cleanup_pipes:
     close(pipe1_fd[0]); close(pipe1_fd[1]);
     close(pipe2_fd[0]); close(pipe2_fd[1]);
     return status;
-
 }
