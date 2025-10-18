@@ -11,6 +11,7 @@
 #define MAX_ARRAYS 1000
 #define MAX_LEN    1000000
 #define BUFFER_SIZE 256
+#define DISPLAY_LIMIT 10
 
 typedef struct {
     double **arrays;
@@ -48,3 +49,8 @@ void parallel_sum(double **arrays, double *result, int k, int n, int num_threads
 int validate_results(double *seq, double *par, int n, double epsilon);
 
 void print_performance_table(int max_threads, long long seq_time, long long* par_times);
+
+void print_input_arrays(double **arrays, int k, int n);
+
+void print_result_array(const char* label, double *result, int n);
+

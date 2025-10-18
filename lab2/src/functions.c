@@ -134,3 +134,49 @@ void print_performance_table(int max_threads, long long seq_time, long long* par
         }
     }
 }
+
+void print_input_arrays(double **arrays, int k, int n) {
+    const char* header = "\n--- Исходные массивы (фрагмент) ---\n";
+    safe_write(header);
+
+    int limit = (n < DISPLAY_LIMIT) ? n : DISPLAY_LIMIT;
+
+    for (int i = 0; i < k; i++) {
+        char buf[BUFFER_SIZE];
+        int len = snprintf(buf, sizeof(buf), "Массив %d: [", i);
+        write(STDOUT_FILENO, buf, len);
+
+        for (int j = 0; j < limit; j++) {
+            write_double(arrays[i][j]);
+            if (j < limit - 1) {
+                safe_write(", ");
+            }
+        }
+        if (n > limit) {
+            safe_write(", ...]\n");
+        } else {
+            safe_write("]\n");
+        }
+    }
+}
+
+void print_result_array(const char* label, double *result, int n) {
+    char header_buf[BUFFER_SIZE];
+    int header_len = snprintf(header_buf, sizeof(header_buf), "\n--- Результат (%s, фрагмент) ---\n[", label);
+    write(STDOUT_FILENO, header_buf, header_len);
+
+    int limit = (n < DISPLAY_LIMIT) ? n : DISPLAY_LIMIT;
+
+    for (int j = 0; j < limit; j++) {
+        write_double(result[j]);
+        if (j < limit - 1) {
+            safe_write(", ");
+        }
+    }
+    if (n > limit) {
+        safe_write(", ...]\n");
+    } else {
+        safe_write("]\n");
+    }
+    safe_write("--------------------------------\n");
+}

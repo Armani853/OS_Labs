@@ -59,9 +59,13 @@ int main(int argc, char* argv[]) {
     srand(time(NULL));
     init_arrays(arrays, k, n);
 
+    print_input_arrays(arrays, k, n);
+
     long long start = get_time_ms();
     sequential_sum(arrays, result_seq, k, n);
     long long seq_time = get_time_ms() - start;
+
+    print_result_array("Sequential", result_seq, n);
 
     const char* seq_msg = "Последовательное время: ";
     safe_write(seq_msg);
@@ -89,6 +93,8 @@ int main(int argc, char* argv[]) {
             break;
         }
     }
+
+    print_result_array("Parallel", result_par, n);
 
     print_performance_table(max_threads, seq_time, par_times);
 
